@@ -1,0 +1,22 @@
+
+# Virtual environments
+medisense/
+venv/
+.venv/
+env/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# CrewAI local files
+.crewai/
+
+# IDE and operating system files
+.vscode/
+.DS_Store

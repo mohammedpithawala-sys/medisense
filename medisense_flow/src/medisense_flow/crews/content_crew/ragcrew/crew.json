@@ -1,0 +1,34 @@
+{
+  "name": "Market Research Crew",
+
+  "agents": [
+    "researcher",
+    "analyst"
+  ],
+
+  "tasks": [
+    {
+      "name": "research",
+      "description": "Research {topic} and collect the most relevant facts.",
+      "expected_output": "Structured research notes about {topic}.",
+      "agent": "researcher"
+    },
+
+    {
+      "name": "analysis",
+      "description": "Analyze the research and write a concise report.",
+      "expected_output": "A markdown report with findings and recommendations.",
+      "agent": "analyst",
+      "context": ["research"],
+      "output_file": "output/report.md"
+    }
+  ],
+
+  "process": "sequential",
+  "verbose": true,
+  "memory": true,
+
+  "inputs": {
+    "topic": "AI Agents"
+  }
+}
