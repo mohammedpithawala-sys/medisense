@@ -1,12 +1,36 @@
+import os
 from typing import Type
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 from crewai.tools import BaseTool
-
 from pinecone import Pinecone
-from sentence_transformers import SentenceTransformer
-import os
+
+load_dotenv()
+
+# ---- Pinecone configuration ----
+# The index must be created in the Pinecone dashboard with the integrated
+# embedding model "llama-text-embed-v2" (dimension 384). Pinecone embeds the
+# query text on its own servers, so no local embedding model is needed.
+#
+# .env:
+#   PINECONE_API_KEY=...
+#   PINECONE_INDEX_NAME=...
+#   PINECONE_NAMESPACE=__default__     (optional; "__default__" is the default namespace)
+PINECONE_NAMESPACE = os.getenv("PINECONE_NAMESPACE", "__default__")
+TOP_K = 5
+
+_index = None
+
+
+def _get_index():
+    """Create the Pinecone index handle once, on first use."""
+    global _index
+    if _index is None:
+        pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+        _index = pc.Index(os.environ["PINECONE_INDEX_NAME"])
+    return _index
 
 
 class MyCustomToolInput(BaseModel):
@@ -22,14 +46,6 @@ class MyCustomTool(BaseTool):
 
     def _run(self, argument: str) -> str:
         return "this is an example of a tool output, ignore it and move along."
-
-
-pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
-
-index = pc.Index(os.environ["PINECONE_INDEX_NAME"])
-
-# Use the same embedding model used to create your stored vectors
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
 class MedicalRAGToolInput(BaseModel):
@@ -57,46 +73,51 @@ class MedicalRAGTool(BaseTool):
 
     def _run(self, query: str) -> str:
         try:
-            # Convert the user's query into an embedding vector
-            query_embedding = embedding_model.encode(
-                query,
-                normalize_embeddings=True
-            ).tolist()
+            index = _get_index()
 
-            # Search Pinecone for the most relevant medical documents
-            results = index.query(
-                vector=query_embedding,
-                top_k=5,
-                include_metadata=True
+            # Text in: Pinecone embeds the query with llama-text-embed-v2
+            # (the index's own embedding model) and searches.
+            response = index.search(
+                namespace=PINECONE_NAMESPACE,
+                query={
+                    "inputs": {"text": query},
+                    "top_k": TOP_K,
+                },
             )
 
-            if not results.matches:
+            hits = response.result.hits
+            if not hits:
                 return "No relevant medical information was found."
 
-            # Extract the retrieved document text
             documents = []
 
-            for match in results.matches:
-                metadata = match.metadata or {}
+            for hit in hits:
+                fields = getattr(hit, "fields", None) or {}
 
-                # Adjust these keys to match your Pinecone metadata
+                # Adjust these keys to match the text field name you chose
+                # in the index's field map (often "text" or "chunk_text").
                 text = (
-                    metadata.get("text")
-                    or metadata.get("content")
-                    or metadata.get("chunk_text")
+                    fields.get("text")
+                    or fields.get("chunk_text")
+                    or fields.get("content")
                 )
+
+                # SDK versions expose the score as `score` or `_score`.
+                score = getattr(hit, "score", None)
+                if score is None:
+                    score = getattr(hit, "_score", 0.0)
 
                 if text:
                     documents.append(
-                        f"Relevance score: {match.score:.4f}\n"
+                        f"Relevance score: {score:.4f}\n"
                         f"Medical information: {text}"
                     )
 
             if not documents:
                 return (
-                    "Relevant vectors were retrieved, but no document text "
-                    "was found in their metadata. Check your Pinecone "
-                    "metadata field names."
+                    "Relevant records were retrieved, but no document text "
+                    "was found in their fields. Check the text field name "
+                    "in your Pinecone index field map."
                 )
 
             return "\n\n".join(documents)

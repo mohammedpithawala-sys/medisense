@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+import os
+
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 from crewai.flow import Flow, listen, start
@@ -6,18 +9,45 @@ from crewai import Agent, LLM
 
 from medisense_flow.tools.custom_tool import MedicalRAGTool
 from datetime import datetime
+import time
 
-# ---- Local LLM (Ollama) ----
-# Make sure Ollama is running and the model is pulled:  ollama pull llama3.1
-# The model name must match `ollama list`, prefixed with "ollama/".
-LOCAL_MODEL = "ollama/llama3.1"
-OLLAMA_URL = "http://localhost:11434"
+# ---- OpenRouter LLM ----
+# Put your key in the project's .env file:   OPENROUTER_API_KEY=sk-or-...
+# Optionally choose the model there too:      OPENROUTER_MODEL=openai/gpt-4o-mini
+# Model names are "<provider>/<model>" exactly as listed on openrouter.ai/models.
+# Pick a model that supports tool calling (needed for the RAG tool) and
+# structured output (needed for the follow-up questions and the score).
+load_dotenv()
 
-local_llm = LLM(
-    model=LOCAL_MODEL,
-    base_url=OLLAMA_URL,
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+if not OPENROUTER_API_KEY:
+    raise RuntimeError(
+        "OPENROUTER_API_KEY is not set. Add it to your .env file or environment."
+    )
+
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+
+llm = LLM(
+    model=f"openrouter/{OPENROUTER_MODEL}",
+    base_url="https://openrouter.ai/api/v1",
+    api_key=OPENROUTER_API_KEY,
     temperature=0.2,  # low temperature = more consistent medical output
 )
+
+def kickoff_with_retry(agent, *args, retries=4, **kwargs):
+    """Run agent.kickoff, retrying when the LLM provider has a temporary error
+    (for example the free model returning 503 'Service temporarily overloaded')."""
+    for attempt in range(1, retries + 1):
+        try:
+            return agent.kickoff(*args, **kwargs)
+        except Exception as e:
+            if attempt == retries:
+                raise
+            wait = 5 * attempt
+            print(f"LLM call failed ({type(e).__name__}); retrying in {wait}s "
+                  f"(attempt {attempt}/{retries - 1})...")
+            time.sleep(wait)
+
 
 class ContentState(BaseModel):
     diagnostics_init: str = ""
@@ -66,7 +96,22 @@ class ContentFlow(Flow[ContentState]):
 
     @start()
     def reportinput(self):
-        diagnostic_input = input("Please enter your medical query: ")
+        print("Paste your medical report or query below (multiple lines are fine).")
+        print("When you are done, type END on a new line and press Enter.")
+
+        lines = []
+        while True:
+            try:
+                line = input()
+            except EOFError:
+                break
+            if line.strip().upper() == "END":
+                break
+            lines.append(line)
+
+        diagnostic_input = "\n".join(lines).strip()
+        if not diagnostic_input:
+            raise ValueError("No medical query was entered.")
 
         self.state.query = diagnostic_input
 
@@ -76,7 +121,7 @@ class ContentFlow(Flow[ContentState]):
     def rag_task(self, query):
         researcher = Agent(
             role="Medical Diagnostic Researcher",
-            llm=local_llm,
+            llm=llm,
             goal=(
                 "Analyze the user's query, retrieve relevant medical information "
                 "from the vector database using the RAG tool, and provide "
@@ -113,7 +158,7 @@ class ContentFlow(Flow[ContentState]):
 
     Format your response in a clear, structured, and user-friendly manner.
     """
-        result = researcher.kickoff(prompt)
+        result = kickoff_with_retry(researcher, prompt)
         self.state.diagnostics_init = result.raw
         return result.raw
 
@@ -122,7 +167,7 @@ class ContentFlow(Flow[ContentState]):
     def followback_questions(self, diagnostics_init_opt):
         followup_agent = Agent(
             role="Medical Diagnostic Follow-up Specialist",
-            llm=local_llm,
+            llm=llm,
             goal=(
                 "Analyze the initial diagnostic insights and generate follow-up "
                 "questions to gather additional information from the user."
@@ -165,7 +210,7 @@ Step 2 - Generate questions:
 - Do NOT ask for personal identifying information (name, address, ID numbers).
 - Prefer questions that can be answered with short answers (yes/no, a number,
   a choice, or a brief description)."""
-        result = followup_agent.kickoff(prompt, response_format=FollowUpQuestions)
+        result = kickoff_with_retry(followup_agent, prompt, response_format=FollowUpQuestions)
         if result.pydantic:
             questions = result.pydantic  # FollowUpQuestions instance
             self.state.q1 = questions.question_1
@@ -195,7 +240,7 @@ Step 2 - Generate questions:
         )
         rediagnosis_agent = Agent(
             role="Medical Re-Diagnosis Specialist",
-            llm=local_llm,
+            llm=llm,
             goal=(
                 "Re-evaluate the initial diagnosis using the user's answers to the "
                 "follow-up questions, and provide an updated, more accurate diagnostic "
@@ -260,7 +305,7 @@ Output format - respond with:
 4. Remaining uncertainties
 5. Recommended next steps, including when to seek urgent care
 """
-        result = rediagnosis_agent.kickoff(prompt)
+        result = kickoff_with_retry(rediagnosis_agent, prompt)
         self.state.rediagnosis = result.raw
         return result.raw
 
@@ -268,7 +313,7 @@ Output format - respond with:
     def diagnosis_scoring(self, result):
         scoring_agent = Agent(
             role="Medical Diagnosis Scoring Specialist",
-            llm=local_llm,
+            llm=llm,
             goal=(
                 "Evaluate the quality, clarity, and usefulness of the re-diagnosis "
                 "provided by the previous agent, and provide a score and feedback."
@@ -328,7 +373,7 @@ Output format - respond with:
 4. Weaknesses
 5. Suggestions for improvement
 """
-        out = scoring_agent.kickoff(prompt, response_format=DiagnosisScore)
+        out = kickoff_with_retry(scoring_agent, prompt, response_format=DiagnosisScore)
         if out.pydantic:
             score = out.pydantic  # DiagnosisScore instance
             self.state.score = score.score
