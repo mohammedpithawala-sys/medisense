@@ -5,8 +5,11 @@ description = "medisense_flow using crewAI"
 authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.10,<3.14"
 dependencies = [
+    "argon2-cffi>=25.1.0",
     "crewai[tools]>=1.15.27,<2.0.0",
+    "fastapi[standard]>=0.162.5",
     "pinecone>=10.0.0",
+    "reportlab>=5.1.0",
 ]
 
 [project.scripts]
@@ -22,3 +25,11 @@ build-backend = "hatchling.build"
 [tool.crewai]
 type = "flow"
 project_id = "657e780f-3880-404c-b638-3a6f2fdd5c48"
+
+[tool.fastapi]
+entrypoint = "medisense_flow.web.app:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]

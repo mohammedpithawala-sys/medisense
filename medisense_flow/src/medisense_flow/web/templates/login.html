@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · MediSense AI</title>
+  <link rel="preload" href="{{ url_for('static', path='fonts/manrope-latin-700-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', path='login.css') }}">
+</head>
+<body>
+<main class="auth" id="auth" data-m="in">
+
+  <!-- Left: brand and message -->
+  <section class="auth-art">
+    <div class="orb o1"></div><div class="orb o2"></div>
+    <div class="brand">
+      <div class="logo">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.8 5.6a5.5 5.5 0 00-7.8 0L12 6.7l-1-1.1a5.5 5.5 0 00-7.8 7.8L12 22l8.8-8.6a5.5 5.5 0 000-7.8z"/></svg>
+      </div>
+      <span>MediSense <em>AI</em></span>
+    </div>
+    <div class="art-body">
+      <p class="art-title">Your health story, clearly explained</p>
+      <p>Share a report, answer three follow-up questions, and get a plain-language summary with a PDF you can keep.</p>
+      <ul>
+        <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 13l4 4L19 7"/></svg>Follow-up questions tailored to your report</li>
+        <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 13l4 4L19 7"/></svg>A clear summary and a PDF to download</li>
+        <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 13l4 4L19 7"/></svg>Earlier reports used only for you, deletable any time</li>
+      </ul>
+    </div>
+    <svg class="pulse" viewBox="0 0 260 90" aria-hidden="true" focusable="false"><path d="M2 48h60l14-34 22 66 18-48 12 16h130"/></svg>
+  </section>
+
+  <!-- Right: the card -->
+  <section class="auth-panel">
+    <div class="card acard" id="form-card">
+      <div class="seg" role="tablist" aria-label="Account">
+        <button type="button" role="tab" id="tab-in" aria-selected="true" aria-controls="form-in">Sign in</button>
+        <button type="button" role="tab" id="tab-up" aria-selected="false" aria-controls="form-up">Create account</button>
+      </div>
+
+      <h1 id="atitle" tabindex="-1">Welcome back</h1>
+      <p class="sub" id="asub">Sign in with your Patient ID and password.</p>
+      <p id="anotice" class="notice" role="status" hidden></p>
+
+      <!-- Sign in -->
+      <form id="form-in" role="tabpanel" aria-labelledby="tab-in" novalidate>
+        <div class="field">
+          <label for="in-code">Patient ID</label>
+          <input id="in-code" type="text" autocomplete="username" autocapitalize="characters"
+                 spellcheck="false" maxlength="32" placeholder="MS-XXXX-XXXX">
+        </div>
+        <div class="field">
+          <label for="in-password">Password</label>
+          <div class="pw">
+            <input id="in-password" type="password" autocomplete="current-password" maxlength="128"
+                   placeholder="Your password">
+            <button type="button" class="pwtoggle" data-target="in-password" aria-controls="in-password" aria-pressed="false">Show</button>
+          </div>
+        </div>
+        <div id="in-error" class="alert" role="alert" hidden></div>
+        <button type="submit" class="mbtn primary wide" id="in-submit">Sign in</button>
+        <p class="aswitch">Don't have an account? <a href="#create" id="go-up">Create one</a></p>
+      </form>
+
+      <!-- Create account -->
+      <form id="form-up" role="tabpanel" aria-labelledby="tab-up" novalidate hidden>
+        <div class="field">
+          <label for="up-name">Full name</label>
+          <input id="up-name" type="text" autocomplete="name" maxlength="80" placeholder="Jane Smith">
+        </div>
+        <div class="field">
+          <label for="up-password">Password</label>
+          <div class="pw">
+            <input id="up-password" type="password" autocomplete="new-password" maxlength="128"
+                   placeholder="At least 8 characters">
+            <button type="button" class="pwtoggle" data-target="up-password" aria-controls="up-password" aria-pressed="false">Show</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="up-confirm">Confirm password</label>
+          <input id="up-confirm" type="password" autocomplete="new-password" maxlength="128">
+        </div>
+        <div class="check">
+          <input id="up-consent" type="checkbox">
+          <label for="up-consent">I agree that MediSense saves my name, reports and summaries so they can be used in my
+            future reports. I can delete everything at any time.</label>
+        </div>
+        <div id="up-error" class="alert" role="alert" hidden></div>
+        <button type="submit" class="mbtn primary wide" id="up-submit">Create account</button>
+        <p class="aswitch">Already registered? <a href="#signin" id="go-in">Sign in</a></p>
+      </form>
+    </div>
+
+    <!-- Shown once, right after registering -->
+    <div class="card acard" id="code-card" hidden>
+      <h1 id="code-title" tabindex="-1">Your Patient ID</h1>
+      <p class="sub">Write this down. You need it, with your password, to sign in next time. We can't recover it for you.</p>
+      <div class="idbox">
+        <span id="new-code" class="idvalue"></span>
+        <button type="button" class="mbtn secondary" id="btn-copy">Copy ID</button>
+      </div>
+      <p id="copy-note" class="hint" role="status"></p>
+      <button type="button" class="mbtn primary wide" id="btn-continue">Continue to my report</button>
+    </div>
+
+    <p class="legal">General information only. MediSense AI is not a diagnosis or medical advice.</p>
+  </section>
+</main>
+<script src="{{ url_for('static', path='login.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MediSense – symptom report review</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body data-max-report="{{ max_report_chars }}" data-max-answer="{{ max_answer_chars }}">
+  <main class="page">
+    <header class="masthead">
+      <div class="topline">
+        <p class="brand">MediSense</p>
+        <p id="userbar" class="userbar" hidden>
+          <span id="user-name" class="who"></span>
+          <button type="button" class="link" id="btn-logout">Sign out</button>
+          <button type="button" class="link" id="btn-open-delete">Delete my data</button>
+        </p>
+      </div>
+      <p class="notice" role="note">
+        This tool gives general information only. It isn't a diagnosis or medical advice.
+        If you have severe symptoms, call your local emergency number.
+      </p>
+    </header>
+
+    <ol class="stepper" id="stepper" aria-label="Progress" hidden>
+      <li data-step="1" aria-current="step"><span class="n">1</span>Your report</li>
+      <li data-step="2"><span class="n">2</span>Follow-up questions</li>
+      <li data-step="3"><span class="n">3</span>Download</li>
+    </ol>
+
+    <!-- 1. Report input -->
+    <section id="panel-input" class="panel" aria-labelledby="h-input" hidden>
+      <h1 id="h-input" tabindex="-1">Describe your symptoms or paste a medical report</h1>
+      <p id="input-lede" class="lede"></p>
+      <form id="form-report" novalidate>
+        <label for="report" class="visually-hidden">Report text</label>
+        <textarea id="report" rows="12" required
+                  placeholder="For example: I've had a dry cough and a mild fever for four days…"></textarea>
+        <div class="field-foot">
+          <span id="report-count" class="count" aria-live="polite"></span>
+          <p id="report-error" class="field-error" role="alert" hidden></p>
+        </div>
+        <button type="submit" class="btn" id="btn-analyze">Analyze report</button>
+      </form>
+    </section>
+
+    <!-- Waiting (analysis and report generation) -->
+    <section id="panel-wait" class="panel" aria-labelledby="h-wait" hidden>
+      <svg class="trace" viewBox="0 0 320 60" aria-hidden="true" focusable="false">
+        <path d="M0 30 H70 L82 30 L92 8 L104 52 L114 30 H170 L180 30 L190 14 L200 44 L208 30 H320"
+              pathLength="100" />
+      </svg>
+      <h2 id="h-wait" tabindex="-1">Analyzing your report</h2>
+      <p id="wait-text" class="lede" role="status">This usually takes a minute or two. Keep this page open.</p>
+    </section>
+
+    <!-- 2. Follow-up questions -->
+    <section id="panel-questions" class="panel" aria-labelledby="h-questions" hidden>
+      <h2 id="h-questions" tabindex="-1">Three questions to narrow things down</h2>
+      <p class="lede">Short answers are fine. If you don't know, say so.</p>
+      <p id="history-note" class="notice-line" hidden></p>
+      <form id="form-answers" novalidate>
+        <div id="questions"></div>
+        <p id="answers-error" class="field-error" role="alert" hidden></p>
+        <button type="submit" class="btn" id="btn-answers">Prepare my report</button>
+      </form>
+    </section>
+
+    <!-- 3. Result -->
+    <section id="panel-result" class="panel" aria-labelledby="h-result" hidden>
+      <h2 id="h-result" tabindex="-1">Your report is ready</h2>
+      <div id="summary-box" class="summary" hidden>
+        <h3>Summary</h3>
+        <p id="summary-text"></p>
+      </div>
+      <p id="score" class="lede" hidden></p>
+      <p class="actions">
+        <a id="download" class="btn" href="#">Download report (PDF)</a>
+        <button type="button" class="btn btn-quiet" id="btn-restart">Start a new report</button>
+      </p>
+    </section>
+
+    <!-- Delete my data -->
+    <section id="panel-delete" class="panel" aria-labelledby="h-delete" hidden>
+      <h2 id="h-delete" tabindex="-1">Delete all my data</h2>
+      <p class="lede">This permanently removes your patient record, your saved reports and their summaries.
+        It can't be undone.</p>
+      <form id="form-delete" novalidate>
+        <div class="field">
+          <label for="delete-password">Type your password to confirm</label>
+          <input id="delete-password" type="password" autocomplete="current-password" maxlength="128" required>
+        </div>
+        <p id="delete-error" class="field-error" role="alert" hidden></p>
+        <p class="actions">
+          <button type="submit" class="btn btn-danger" id="btn-delete">Delete everything</button>
+          <button type="button" class="btn btn-quiet" id="btn-delete-cancel">Cancel</button>
+        </p>
+      </form>
+    </section>
+
+    <!-- Errors -->
+    <section id="panel-error" class="panel" aria-labelledby="h-error" hidden>
+      <h2 id="h-error" tabindex="-1">That didn't work</h2>
+      <p id="error-text" class="lede" role="alert"></p>
+      <p class="actions"><button type="button" class="btn" id="btn-error-restart">Start over</button></p>
+    </section>
+  </main>
+  <script src="{{ url_for('static', path='app.js') }}"></script>
+</body>
+</html>
