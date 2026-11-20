@@ -6,7 +6,7 @@
   <title>MediSense – symptom report review</title>
   <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
 </head>
-<body data-max-report="{{ max_report_chars }}" data-max-answer="{{ max_answer_chars }}">
+<body data-max-report="{{ max_report_chars }}" data-max-answer="{{ max_answer_chars }}" data-max-chat="{{ max_chat_chars }}">
   <main class="page">
     <header class="masthead">
       <div class="topline">
@@ -26,8 +26,10 @@
     <ol class="stepper" id="stepper" aria-label="Progress" hidden>
       <li data-step="1" aria-current="step"><span class="n">1</span>Your report</li>
       <li data-step="2"><span class="n">2</span>Follow-up questions</li>
-      <li data-step="3"><span class="n">3</span>Download</li>
+      <li data-step="3"><button type="button" class="steptab" id="tab-download" disabled><span class="n">3</span>Download</button></li>
+      <li data-step="4"><button type="button" class="steptab" id="tab-chat" aria-disabled="true" aria-describedby="chat-tab-hint" title="Available after your report is ready"><span class="n">4</span>Ask questions</button></li>
     </ol>
+    <span id="chat-tab-hint" class="visually-hidden">Available after your report is ready.</span>
 
     <!-- 1. Report input -->
     <section id="panel-input" class="panel" aria-labelledby="h-input" hidden>
@@ -81,11 +83,37 @@
       </p>
     </section>
 
+    <!-- 4. Ask questions about the report -->
+    <section id="panel-chat" class="panel" aria-labelledby="h-chat" hidden>
+      <h2 id="h-chat" tabindex="-1">Ask about your report</h2>
+      <p class="lede">Answers come only from your report. This isn't medical advice, and it can't replace a doctor.</p>
+      <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-label="Conversation"></div>
+      <div id="chat-starters" class="starters" role="group" aria-label="Suggested questions">
+        <button type="button" class="chip" data-q="What does my summary mean?">What does my summary mean?</button>
+        <button type="button" class="chip" data-q="What are the possible conditions in my report?">What are the possible conditions?</button>
+        <button type="button" class="chip" data-q="What should I do next?">What should I do next?</button>
+        <button type="button" class="chip" data-q="When should I see a doctor?">When should I see a doctor?</button>
+      </div>
+      <p id="chat-error" class="field-error" role="alert" hidden></p>
+      <form id="form-chat" novalidate>
+        <label for="chat-input" class="visually-hidden">Your question</label>
+        <textarea id="chat-input" rows="2" maxlength="{{ max_chat_chars }}" placeholder="Ask about your report…"></textarea>
+        <div class="chat-foot">
+          <span class="count"><span id="chat-count"></span> <span id="chat-left"></span></span>
+          <span class="chat-buttons">
+            <button type="button" class="btn btn-quiet" id="chat-stop" hidden>Stop</button>
+            <button type="button" class="btn btn-quiet" id="chat-clear">Clear chat</button>
+            <button type="submit" class="btn" id="chat-send">Send</button>
+          </span>
+        </div>
+      </form>
+    </section>
+
     <!-- Delete my data -->
     <section id="panel-delete" class="panel" aria-labelledby="h-delete" hidden>
       <h2 id="h-delete" tabindex="-1">Delete all my data</h2>
-      <p class="lede">This permanently removes your patient record, your saved reports and their summaries.
-        It can't be undone.</p>
+      <p class="lede">This permanently removes your patient record, your saved reports, their summaries and
+        your chat messages. It can't be undone.</p>
       <form id="form-delete" novalidate>
         <div class="field">
           <label for="delete-password">Type your password to confirm</label>

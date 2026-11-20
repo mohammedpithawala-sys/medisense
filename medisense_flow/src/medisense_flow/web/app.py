@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import db
 from .config import STATIC_DIR, settings
-from .routers import api, auth, pages
+from .routers import api, auth, chat, pages
 
 settings.reports_dir.mkdir(parents=True, exist_ok=True)
 db.init_db()  # creates var/medisense.db and its tables the first time
@@ -37,3 +37,4 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(pages.router)
 app.include_router(auth.router)
 app.include_router(api.router)
+app.include_router(chat.router)

@@ -9,7 +9,7 @@
   const NOTICES = {
     signed_out: "You've been signed out.",
     expired: "Your session ended. Please sign in again.",
-    deleted: "Your record, reports and summaries were deleted.",
+    deleted: "Your record, reports, summaries and chat messages were deleted.",
   };
 
   const TEXT = {

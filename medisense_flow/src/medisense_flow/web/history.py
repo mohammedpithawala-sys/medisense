@@ -5,11 +5,11 @@ from . import db
 from .config import settings
 
 
-def load_history(patient_id: int) -> tuple[str, int]:
+def load_history(patient_id: int, exclude_session_id: str | None = None) -> tuple[str, int]:
     """Return (history_text, number_of_reports). Only summaries, scores and dates are
     used (not full reports), which keeps prompts short and limits what is sent to the AI.
     The name and Patient ID are never included."""
-    rows = db.get_recent_reports(patient_id, settings.history_limit)
+    rows = db.get_recent_reports(patient_id, settings.history_limit, exclude_session_id)
     if not rows:
         return "", 0
     now = datetime.now(timezone.utc)

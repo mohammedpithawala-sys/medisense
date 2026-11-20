@@ -35,6 +35,7 @@ class Session:
     questions: list[str] = field(default_factory=list)
     answers: list[str] = field(default_factory=list)
     summary: str = ""
+    final_assessment: str = ""    # the updated assessment text (the chatbot reads it)
     score: int | None = None
     report_path: Path | None = None
     download_name: str = ""

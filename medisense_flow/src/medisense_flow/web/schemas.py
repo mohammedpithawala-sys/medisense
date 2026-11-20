@@ -1,6 +1,6 @@
 """Pydantic models for requests and responses."""
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints, field_validator
 
@@ -68,6 +68,29 @@ class Profile(BaseModel):
     name: str
     patient_code: str
     earlier_reports: int = 0
+
+
+# ---------- chat ----------
+ChatText = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=settings.chat_max_chars),
+]
+
+
+class ChatRequest(BaseModel):
+    message: ChatText
+
+
+class ChatMessageView(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+    kind: Literal["normal", "emergency"] = "normal"
+    created_at: str
+
+
+class ChatHistory(BaseModel):
+    messages: list[ChatMessageView]
+    questions_left: int
 
 
 # ---------- reports ----------

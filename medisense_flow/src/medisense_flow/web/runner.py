@@ -137,6 +137,7 @@ def run_report(session_id: str) -> None:
         session_id,
         status=SessionStatus.COMPLETE,
         summary=state.summary,
+        final_assessment=state.rediagnosis,
         score=score,
         report_path=pdf_path,
         download_name=f"MediSense_Report_{_safe_filename_part(session.patient_name)}_{created:%Y-%m-%d}.pdf",

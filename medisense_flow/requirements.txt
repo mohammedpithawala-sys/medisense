@@ -25,6 +25,7 @@ anyio==4.15.1
     #   fastapi
     #   httpx
     #   httpx2
+    #   langsmith
     #   mcp
     #   openai
     #   pinecone
@@ -55,12 +56,14 @@ build==1.6.1
     # via chromadb
 cel-python==0.5.0
     # via crewai
-certifi==2026.7.22
+certifi==2026.10.23
     # via
     #   crewai-cli
     #   httpcore
     #   httpx
     #   kubernetes
+    #   langchain-core
+    #   langchain-openai
     #   requests
     #   sentry-sdk
 cffi==2.1.1
@@ -113,7 +116,9 @@ deprecation==2.1.0
 detect-installer==0.2.1
     # via fastapi-cloud-cli
 distro==1.9.0
-    # via openai
+    # via
+    #   langsmith
+    #   openai
 dnspython==2.8.0 ; python_full_version < '3.11'
     # via email-validator
 dnspython==2.9.2 ; python_full_version >= '3.11'
@@ -191,6 +196,7 @@ httpx==0.28.1
     #   crewai-core
     #   fastapi
     #   fastapi-cloud-cli
+    #   langchain-core
     #   mcp
     #   openai
     #   pinecone
@@ -200,6 +206,7 @@ httpx2==2.13.1
     # via
     #   fastapi
     #   huggingface-hub
+    #   langsmith
 httpx2-jsfetch==1.0 ; python_full_version >= '3.12' and sys_platform == 'emscripten'
     # via httpx2
 huggingface-hub==2.2.0
@@ -236,6 +243,12 @@ json-repair==0.60.1
     # via crewai
 json5==0.10.0
     # via crewai
+jsonpatch==1.46 ; python_full_version < '3.11'
+    # via langchain-core
+jsonpatch==1.47 ; python_full_version >= '3.11'
+    # via langchain-core
+jsonpointer==3.12
+    # via jsonpatch
 jsonref==1.1.0
     # via crewai
 jsonschema==4.26.0
@@ -252,6 +265,24 @@ lance-namespace-urllib3-client==0.13.0
     # via lance-namespace
 lancedb==0.30.0
     # via crewai
+langchain-core==1.7.7 ; python_full_version < '3.11'
+    # via
+    #   langchain-openai
+    #   medisense-flow
+langchain-core==1.8.2 ; python_full_version >= '3.11'
+    # via
+    #   langchain-openai
+    #   medisense-flow
+langchain-openai==1.7.4 ; python_full_version < '3.11'
+    # via medisense-flow
+langchain-openai==1.8.1 ; python_full_version >= '3.11'
+    # via medisense-flow
+langchain-protocol==0.0.21
+    # via langchain-core
+langsmith==0.14.17 ; python_full_version < '3.11'
+    # via langchain-core
+langsmith==0.15.0 ; python_full_version >= '3.11'
+    # via langchain-core
 lark==1.3.1
     # via cel-python
 linkify-it-py==2.2.0
@@ -308,6 +339,7 @@ openai==2.54.0
     # via
     #   crewai
     #   instructor
+    #   langchain-openai
 openpyxl==3.1.5
     # via crewai
 opentelemetry-api==1.45.1
@@ -357,6 +389,7 @@ opentelemetry-semantic-conventions==0.66b1
 orjson==3.13.0
     # via
     #   chromadb
+    #   langsmith
     #   pinecone
 overrides==7.7.0
     # via
@@ -370,6 +403,8 @@ packaging==26.3
     #   deprecation
     #   huggingface-hub
     #   lancedb
+    #   langchain-core
+    #   langsmith
     #   onnxruntime
 pdfminer-six==20260107
     # via pdfplumber
@@ -419,6 +454,8 @@ pydantic==2.12.5
     #   instructor
     #   lance-namespace-urllib3-client
     #   lancedb
+    #   langchain-core
+    #   langsmith
     #   mcp
     #   openai
     #   pydantic-extra-types
@@ -493,6 +530,7 @@ pyyaml==6.0.3
     #   crewai
     #   huggingface-hub
     #   kubernetes
+    #   langchain-core
     #   uvicorn
 referencing==0.37.0
     # via
@@ -509,13 +547,17 @@ requests==2.34.2
     #   crewai-tools
     #   instructor
     #   kubernetes
+    #   langsmith
     #   opentelemetry-exporter-http-transport
     #   opentelemetry-exporter-otlp-proto-http
     #   requests-oauthlib
+    #   requests-toolbelt
     #   tiktoken
     #   youtube-transcript-api
 requests-oauthlib==2.0.0
     # via kubernetes
+requests-toolbelt==1.0.0
+    # via langsmith
 rich==14.3.4
     # via
     #   chromadb
@@ -548,7 +590,9 @@ six==1.17.0
     #   kubernetes
     #   python-dateutil
 sniffio==1.3.1
-    # via openai
+    # via
+    #   langsmith
+    #   openai
 soupsieve==2.10 ; python_full_version < '3.11.5'
     # via beautifulsoup4
 soupsieve==3.0.3 ; python_full_version >= '3.11.5'
@@ -571,10 +615,13 @@ tenacity==9.2.1
     # via
     #   chromadb
     #   instructor
+    #   langchain-core
 textual==8.2.8
     # via crewai-cli
 tiktoken==0.12.0
-    # via crewai-tools
+    # via
+    #   crewai-tools
+    #   langchain-openai
 tokenizers==0.23.3
     # via
     #   chromadb
@@ -623,6 +670,9 @@ typing-extensions==4.16.0
     #   httpx2
     #   huggingface-hub
     #   lance-namespace-urllib3-client
+    #   langchain-core
+    #   langchain-protocol
+    #   langsmith
     #   mcp
     #   multidict
     #   openai
@@ -658,6 +708,10 @@ urllib3==2.8.0
     #   lance-namespace-urllib3-client
     #   requests
     #   sentry-sdk
+uuid-utils==0.19.0
+    # via
+    #   langchain-core
+    #   langsmith
 uv==0.11.33
     # via crewai-cli
 uvicorn==0.54.0
@@ -674,12 +728,20 @@ watchfiles==1.3.0
 websocket-client==1.9.2
     # via kubernetes
 websockets==16.1.1 ; python_full_version < '3.11'
-    # via uvicorn
+    # via
+    #   langsmith
+    #   uvicorn
 websockets==17.2 ; python_full_version >= '3.11'
-    # via uvicorn
+    # via
+    #   langsmith
+    #   uvicorn
+xxhash==4.1.0
+    # via langsmith
 yarl==1.25.1
     # via aiohttp
 youtube-transcript-api==1.2.4
     # via crewai-tools
 zipp==4.1.1 ; python_full_version < '3.10.2'
     # via importlib-metadata
+zstandard==0.25.0
+    # via langsmith

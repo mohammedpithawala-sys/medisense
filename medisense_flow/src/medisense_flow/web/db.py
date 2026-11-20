@@ -38,6 +38,16 @@ CREATE TABLE IF NOT EXISTS reports (
     created_at         TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_reports_patient ON reports(patient_id, created_at DESC);
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    session_id TEXT NOT NULL,
+    role       TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+    content    TEXT NOT NULL,
+    kind       TEXT NOT NULL DEFAULT 'normal',
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_chat_session ON chat_messages(patient_id, session_id, id);
 """
 
 
@@ -138,18 +148,73 @@ def save_report(
         )
 
 
-def get_recent_reports(patient_id: int, limit: int) -> list[dict]:
+def get_recent_reports(patient_id: int, limit: int, exclude_session_id: str | None = None) -> list[dict]:
     """The patient's newest reports first (only fields needed as history)."""
+    sql = "SELECT summary, score, created_at FROM reports WHERE patient_id = ?"
+    params: list = [patient_id]
+    if exclude_session_id:
+        sql += " AND session_id != ?"
+        params.append(exclude_session_id)
+    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+    params.append(limit)
     with connect() as conn:
-        rows = conn.execute(
-            "SELECT summary, score, created_at FROM reports WHERE patient_id = ? "
-            "ORDER BY created_at DESC, id DESC LIMIT ?",
-            (patient_id, limit),
-        ).fetchall()
+        rows = conn.execute(sql, params).fetchall()
     return [dict(r) for r in rows]
+
+
+def get_report_by_session(patient_id: int, session_id: str) -> dict | None:
+    """One finished report of this patient (None if it isn't theirs or doesn't exist)."""
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT submitted_report, initial_assessment, qa_json, final_assessment, summary, score, created_at "
+            "FROM reports WHERE patient_id = ? AND session_id = ?",
+            (patient_id, session_id),
+        ).fetchone()
+    if row is None:
+        return None
+    data = dict(row)
+    data["qa"] = [(item["question"], item["answer"]) for item in json.loads(data.pop("qa_json"))]
+    return data
 
 
 def count_reports(patient_id: int) -> int:
     with connect() as conn:
         row = conn.execute("SELECT COUNT(*) AS n FROM reports WHERE patient_id = ?", (patient_id,)).fetchone()
     return int(row["n"])
+
+
+# ---------- chat messages ----------
+def add_chat_message(patient_id: int, session_id: str, role: str, content: str, kind: str = "normal") -> None:
+    with connect() as conn:
+        conn.execute(
+            "INSERT INTO chat_messages (patient_id, session_id, role, content, kind, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (patient_id, session_id, role, content, kind, _now()),
+        )
+
+
+def get_chat_messages(patient_id: int, session_id: str, limit: int | None = None) -> list[dict]:
+    """Oldest first. With `limit`, only the newest `limit` messages (still oldest first)."""
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT role, content, kind, created_at FROM ("
+            "  SELECT id, role, content, kind, created_at FROM chat_messages "
+            "  WHERE patient_id = ? AND session_id = ? ORDER BY id DESC LIMIT ?"
+            ") ORDER BY id ASC",
+            (patient_id, session_id, -1 if limit is None else limit),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def count_chat_questions(patient_id: int, session_id: str) -> int:
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS n FROM chat_messages WHERE patient_id = ? AND session_id = ? AND role = 'user'",
+            (patient_id, session_id),
+        ).fetchone()
+    return int(row["n"])
+
+
+def clear_chat(patient_id: int, session_id: str) -> None:
+    with connect() as conn:
+        conn.execute("DELETE FROM chat_messages WHERE patient_id = ? AND session_id = ?", (patient_id, session_id))

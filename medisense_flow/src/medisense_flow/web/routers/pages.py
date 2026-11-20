@@ -20,6 +20,7 @@ def index(request: Request, patient: OptionalPatient) -> Response:
         {
             "max_report_chars": settings.max_report_chars,
             "max_answer_chars": settings.max_answer_chars,
+            "max_chat_chars": settings.chat_max_chars,
         },
     )
 
