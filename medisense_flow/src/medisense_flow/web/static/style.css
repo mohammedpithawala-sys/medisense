@@ -202,6 +202,34 @@ textarea[aria-invalid="true"], input[aria-invalid="true"] { border-color: var(--
 .field-error { margin: 0 0 1rem; color: var(--danger); font-size: 0.9rem; font-weight: 500; }
 .field-foot .field-error { margin: 0; }
 
+/* ---------- report document upload ---------- */
+.upload { margin: 0 0 1.2rem; }
+.dropzone {
+  display: flex; flex-direction: column; align-items: center; gap: 0.25rem; text-align: center;
+  padding: 1.2rem 1rem; cursor: pointer;
+  background: var(--tint); border: 1.5px dashed var(--line-strong); border-radius: var(--radius-sm);
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone:hover, .dropzone.dragover { border-color: var(--action); background: var(--tint); }
+.dropzone.dragover { border-style: solid; }
+.upload:focus-within .dropzone { outline: 3px solid var(--action); outline-offset: 2px; }
+.upload.busy .dropzone { opacity: 0.6; cursor: progress; }
+.dz-title { font-weight: 600; color: var(--action); }
+.dz-hint { color: var(--muted); font-size: 0.85rem; }
+.upload-status { display: flex; align-items: center; gap: 0.6rem; margin: 0.7rem 0 0; font-size: 0.9rem; color: var(--ink); }
+.upload-status[hidden] { display: none; }
+.upload > .field-error { margin: 0.7rem 0 0; }
+.upload-or { margin: 0.7rem 0 0; }
+.upload-status:not([hidden]) ~ .upload-or { display: none; }  /* "or type below" is only for before a file is loaded */
+.spinner {
+  flex: none; width: 1rem; height: 1rem; border-radius: 50%;
+  border: 2px solid var(--line-strong); border-top-color: var(--action);
+  animation: spin 0.8s linear infinite;
+}
+.spinner[hidden] { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; border-top-color: var(--line-strong); } }
+
 .q { margin: 0 0 1.4rem; }
 .q label { display: block; margin-bottom: 0.5rem; font-weight: 600; line-height: 1.45; }
 
@@ -416,16 +444,16 @@ form[hidden] { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .typing i { animation: none; opacity: 0.6; } }
 
-/* ---------- quiet corner tab (link to the clinical decision support app) ---------- */
+/* ---------- corner tab (link to the clinical decision support app) ---------- */
 .corner-tab {
   position: fixed; top: 0; right: 0; z-index: 5;
   padding: 0.4rem 0.9rem 0.45rem 1rem;
-  font: 600 0.78rem/1.2 var(--sans); color: #fff; text-decoration: none;
+  font: 600 0.78rem/1.2 var(--sans); color: #fff; text-decoration: none; white-space: nowrap;
   background: #0f6b5c; border: 1px solid rgba(255, 255, 255, 0.35);
   border-top: none; border-right: none; border-radius: 0 0 0 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); opacity: 0.8;
-  transition: opacity 0.2s, background 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  transition: background 0.2s, padding 0.2s;
 }
-.corner-tab:hover, .corner-tab:focus-visible { opacity: 1; background: #0a5247; }
+.corner-tab:hover, .corner-tab:focus-visible { background: #0a5247; padding-bottom: 0.6rem; }
 .corner-tab:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
 @media (max-width: 30rem) { .corner-tab { font-size: 0.7rem; padding: 0.3rem 0.7rem 0.35rem 0.8rem; } }

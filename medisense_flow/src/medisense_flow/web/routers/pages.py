@@ -19,6 +19,7 @@ def index(request: Request, patient: OptionalPatient) -> Response:
         "index.html",
         {
             "max_report_chars": settings.max_report_chars,
+            "max_upload_mb": settings.max_upload_mb,
             "max_answer_chars": settings.max_answer_chars,
             "max_chat_chars": settings.chat_max_chars,
         },

@@ -26,6 +26,11 @@ class Settings:
     # Limits for what users can send.
     max_report_chars: int = int(os.getenv("MEDISENSE_MAX_REPORT_CHARS", "8000"))
     max_answer_chars: int = int(os.getenv("MEDISENSE_MAX_ANSWER_CHARS", "1000"))
+    # Uploaded report documents (PDF / DOCX). Their text is extracted and shown in the report
+    # box; the report limit above still applies when the patient presses "Analyze report".
+    max_upload_mb: int = int(os.getenv("MEDISENSE_MAX_UPLOAD_MB", "5"))
+    max_upload_pages: int = int(os.getenv("MEDISENSE_MAX_UPLOAD_PAGES", "50"))
+    max_extracted_chars: int = int(os.getenv("MEDISENSE_MAX_EXTRACTED_CHARS", "50000"))
     # In-progress sessions (and their PDF files) are deleted after this many minutes.
     # Saved reports in the database are NOT affected.
     session_ttl_minutes: int = int(os.getenv("MEDISENSE_SESSION_TTL_MINUTES", "60"))
@@ -57,6 +62,10 @@ class Settings:
     chat_rate_limit: int = int(os.getenv("MEDISENSE_CHAT_RATE_LIMIT", "15"))        # questions per window per patient
     chat_rate_window: int = int(os.getenv("MEDISENSE_CHAT_RATE_WINDOW", "300"))     # seconds
     chat_max_concurrent: int = int(os.getenv("MEDISENSE_CHAT_MAX_CONCURRENT", "8")) # answers streaming at once
+
+    @property
+    def max_upload_bytes(self) -> int:
+        return self.max_upload_mb * 1024 * 1024
 
 
 settings = Settings()

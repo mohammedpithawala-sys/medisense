@@ -98,6 +98,15 @@ class ReportSubmission(BaseModel):
     report: ReportText
 
 
+class DocumentText(BaseModel):
+    """Text read from an uploaded PDF or DOCX. It is only shown to the patient for review;
+    it reaches the AI through POST /api/sessions, the same as typed text."""
+    text: str
+    kind: Literal["pdf", "docx"]
+    pages: int | None = None             # PDFs only
+    characters: int
+
+
 class AnswersSubmission(BaseModel):
     # Exactly three answers, in the same order as the three questions.
     answers: Annotated[list[AnswerText], Field(min_length=3, max_length=3)]

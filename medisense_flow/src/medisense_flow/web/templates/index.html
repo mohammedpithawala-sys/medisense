@@ -6,7 +6,10 @@
   <title>MediSense – symptom report review</title>
   <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
 </head>
-<body data-max-report="{{ max_report_chars }}" data-max-answer="{{ max_answer_chars }}" data-max-chat="{{ max_chat_chars }}">
+<body data-max-report="{{ max_report_chars }}" data-max-upload-mb="{{ max_upload_mb }}" data-max-answer="{{ max_answer_chars }}" data-max-chat="{{ max_chat_chars }}">
+  <!-- Corner tab: link to the clinical decision support app -->
+  <a class="corner-tab" href="https://medisense-ai-clinical-decision-support-system-hpddswsp9z3baegx.streamlit.app/"
+     target="_blank" rel="noopener noreferrer">Clinical support&nbsp;&#8599;</a>
   <main class="page">
     <header class="masthead">
       <div class="topline">
@@ -35,6 +38,22 @@
     <section id="panel-input" class="panel" aria-labelledby="h-input" hidden>
       <h1 id="h-input" tabindex="-1">Describe your symptoms or paste a medical report</h1>
       <p id="input-lede" class="lede"></p>
+
+      <div class="upload" id="upload">
+        <input id="report-file" class="visually-hidden" type="file"
+               accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+        <label for="report-file" id="dropzone" class="dropzone">
+          <span class="dz-title">Upload a PDF or Word report</span>
+          <span class="dz-hint">Choose a file or drag it here. .pdf or .docx, up to {{ max_upload_mb }} MB.</span>
+        </label>
+        <p id="upload-status" class="upload-status" role="status" hidden>
+          <span id="upload-spinner" class="spinner" aria-hidden="true" hidden></span>
+          <span id="upload-status-text"></span>
+        </p>
+        <p id="upload-error" class="field-error" role="alert" hidden></p>
+        <p class="hint upload-or">Or type or paste your report below.</p>
+      </div>
+
       <form id="form-report" novalidate>
         <label for="report" class="visually-hidden">Report text</label>
         <textarea id="report" rows="12" required

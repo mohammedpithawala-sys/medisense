@@ -3,6 +3,7 @@
 
   const STORAGE_KEY = "medisense.session";
   const MAX_REPORT = Number(document.body.dataset.maxReport);
+  const MAX_UPLOAD_MB = Number(document.body.dataset.maxUploadMb);
   const MAX_ANSWER = Number(document.body.dataset.maxAnswer);
   const MAX_CHAT = Number(document.body.dataset.maxChat);
   const $ = (id) => document.getElementById(id);
@@ -29,6 +30,10 @@
   let chatLoadedFor = null;    // which report's conversation is on screen
   let chatAbort = null;
   let chatBusy = false;
+  let uploadName = null;       // the document whose text is in the report box
+  let uploadPages = null;
+  let uploadBusy = false;
+  let uploadSeq = 0;           // bumped on reset so a late reply for an old upload is ignored
 
   // ---------- helpers ----------
   // step: 1-3 shows the progress bar; 0 hides it (delete and error screens)
@@ -67,7 +72,11 @@
     try {
       res = await fetch(path, {
         ...options,
-        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        // A FormData body needs the browser to set its own multipart Content-Type.
+        headers: {
+          ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+          ...(options.headers || {}),
+        },
       });
     } catch {
       const err = new Error("Can't reach the server. Check your connection and try again.");
@@ -109,6 +118,7 @@
     try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
     resetChat();
     $("report").value = "";
+    resetUpload();
     $("questions").replaceChildren();
     updateCount();
     setBusy($("btn-analyze"), false);
@@ -273,7 +283,122 @@
     const len = $("report").value.length;
     $("report-count").textContent = `${len.toLocaleString()} / ${MAX_REPORT.toLocaleString()} characters`;
   }
-  $("report").addEventListener("input", updateCount);
+  $("report").addEventListener("input", () => { updateCount(); refreshUploadStatus(); });
+
+  // ---------- report document upload (PDF / DOCX) ----------
+  // The file's text is extracted by the server and placed in the report box, where the patient can
+  // check and edit it. "Analyze report" then sends it like any typed report, so there is one AI path.
+  const fileInput = $("report-file");
+  const dropzone = $("dropzone");
+
+  function setUploadBusy(busy) {
+    uploadBusy = busy;
+    fileInput.disabled = busy;
+    $("upload").classList.toggle("busy", busy);
+    $("upload-spinner").hidden = !busy;
+    setBusy($("btn-analyze"), busy);   // don't let a half-loaded report be submitted
+  }
+
+  function setUploadStatus(message) {
+    $("upload-status-text").textContent = message || "";
+    $("upload-status").hidden = !message;
+  }
+
+  // What the patient sees once a document is loaded; updated as they edit the text.
+  function refreshUploadStatus() {
+    if (!uploadName || uploadBusy) return;
+    const pages = uploadPages ? `${uploadPages} page${uploadPages === 1 ? "" : "s"}, ` : "";
+    const len = $("report").value.length;
+    let message = `Loaded ${uploadName} (${pages}${len.toLocaleString()} characters). Check the text below, then choose Analyze report.`;
+    if (len > MAX_REPORT) {
+      message += ` It is longer than the ${MAX_REPORT.toLocaleString()}-character limit, so please shorten it first.`;
+    }
+    setUploadStatus(message);
+  }
+
+  function resetUpload() {
+    uploadSeq += 1;
+    uploadName = null;
+    uploadPages = null;
+    fileInput.value = "";
+    setFieldError($("upload-error"), "");
+    setUploadStatus("");
+    setUploadBusy(false);
+  }
+
+  async function handleDocument(file) {
+    setFieldError($("upload-error"), "");
+    if (!/\.(pdf|docx)$/i.test(file.name)) {
+      const legacy = /\.doc$/i.test(file.name);
+      setFieldError($("upload-error"), legacy
+        ? "Old Word (.doc) files aren't supported. Save it as .docx and try again."
+        : "Only PDF (.pdf) and Word (.docx) files can be uploaded.");
+      return;
+    }
+    if (file.size === 0) { setFieldError($("upload-error"), "This file is empty."); return; }
+    if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      setFieldError($("upload-error"), `This file is larger than ${MAX_UPLOAD_MB} MB.`);
+      return;
+    }
+    const report = $("report");
+    if (report.value.trim() && !window.confirm("Replace the text in the report box with the text from this document?")) {
+      return;
+    }
+
+    const seq = ++uploadSeq;
+    uploadName = null;
+    setUploadStatus(`Reading ${file.name}…`);
+    setUploadBusy(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const result = await api("/api/documents/extract", { method: "POST", body: form });
+      if (seq !== uploadSeq) return;                 // the patient started over meanwhile
+      report.value = result.text;
+      report.removeAttribute("aria-invalid");
+      setFieldError($("report-error"), "");
+      updateCount();
+      uploadName = file.name;
+      uploadPages = result.pages;
+      setUploadBusy(false);
+      refreshUploadStatus();
+      report.focus();
+      report.setSelectionRange(0, 0);
+      report.scrollTop = 0;
+    } catch (err) {
+      if (seq !== uploadSeq || err.handled) return;
+      setUploadStatus("");
+      setUploadBusy(false);
+      setFieldError($("upload-error"), err.status === 413
+        ? `This file is larger than ${MAX_UPLOAD_MB} MB.`
+        : err.message);
+    }
+  }
+
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files && fileInput.files[0];
+    fileInput.value = "";   // the File object stays valid; this lets the same file be chosen again
+    if (file) handleDocument(file);
+  });
+
+  ["dragenter", "dragover"].forEach((type) => dropzone.addEventListener(type, (event) => {
+    event.preventDefault();
+    if (!uploadBusy) dropzone.classList.add("dragover");
+  }));
+  ["dragleave", "dragend"].forEach((type) => dropzone.addEventListener(type, () => {
+    dropzone.classList.remove("dragover");
+  }));
+  dropzone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    dropzone.classList.remove("dragover");
+    if (uploadBusy) return;
+    const files = event.dataTransfer ? event.dataTransfer.files : [];
+    if (files.length > 1) {
+      setFieldError($("upload-error"), "Please upload one document at a time.");
+    } else if (files.length === 1) {
+      handleDocument(files[0]);
+    }
+  });
 
   $("form-report").addEventListener("submit", async (event) => {
     event.preventDefault();
